@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ARIA New Releases</title>
 <link rel="icon" type="image/png" href="favicon.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
@@ -530,7 +530,10 @@ async function handleLogin() {
     options: { emailRedirectTo: window.location.href.split('#')[0] }
   });
   if (error) {
-    document.getElementById('login-msg').textContent = error.message;
+    const isUnauthorized = error.message?.toLowerCase().includes('signup') || error.status === 422 || error.status === 400;
+    document.getElementById('login-msg').textContent = isUnauthorized
+      ? 'This app is private — that email isn\'t authorised to sign in.'
+      : error.message;
     btn.textContent = 'Send magic link';
     btn.disabled = false;
   } else {
