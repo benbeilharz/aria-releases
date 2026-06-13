@@ -24,7 +24,7 @@
     --shadow: 0 2px 12px rgba(124,58,237,0.08);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
   /* ── Login Screen ─────────────────────────────────────────────────────────── */
   #login-screen {
@@ -355,6 +355,9 @@
 
     /* Hide label column in table on mobile */
     .col-label-th, .col-label-td { display: none; }
+
+    /* Keep table date-row header text small on mobile */
+    .release-table .table-date-row td { font-size: 10px; }
   }
 
   @media (max-width: 400px) {
@@ -470,7 +473,14 @@ async function toggleListened(btn) {
     btn.classList.add('done');
     btn.closest('.release-card, tr')?.classList.add('listened');
   }
-  if (currentListenedFilter !== 'all') render();
+  if (currentListenedFilter !== 'all') {
+    render();
+    const container = document.getElementById('view-months');
+    if (container) {
+      container.style.pointerEvents = 'none';
+      setTimeout(() => { container.style.pointerEvents = ''; }, 400);
+    }
+  }
   setSyncState('syncing');
   const { error } = wasListened
     ? await sb.from('listened_releases').delete().eq('key', key)
