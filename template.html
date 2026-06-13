@@ -265,7 +265,7 @@
   .release-table .col-label { color: var(--text2); font-size: 11px; }
   tr.listened td { opacity: 0.45; }
   tr.listened .col-title-cell { text-decoration: line-through; }
-  .table-date-row td { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text2); padding: 10px 12px 6px; background: var(--bg); border-bottom: none !important; cursor: default !important; }
+  .release-table .table-date-row td { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text2); padding: 10px 12px 6px; background: var(--bg); border-bottom: none !important; cursor: default !important; }
   .table-date-row:hover { background: var(--bg) !important; }
   .col-play { width: 32px; text-align: center; }
   .col-check { width: 36px; text-align: center; }
@@ -514,7 +514,7 @@ function showLoginScreen() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  loadListened().then(() => { buildYearTabs(); render(); });
+  loadListened().then(() => { applyState(); render(); });
 }
 
 async function handleLogin() {
@@ -564,6 +564,15 @@ function amUrl(a, t)      { return 'https://music.apple.com/search?term=' + enco
 const years = [...new Set(ALL_RELEASES.map(r => r.year))].sort();
 currentYear = years[years.length - 1];
 
+try {
+  const s = JSON.parse(localStorage.getItem('aria_state') || '{}');
+  if (['months','artists'].includes(s.view))                    currentView = s.view;
+  if (['cards','table'].includes(s.displayMode))                currentDisplayMode = s.displayMode;
+  if (years.includes(s.year))                                   currentYear = s.year;
+  if (['all','Album','Single'].includes(s.filter))              currentFilter = s.filter;
+  if (['all','unheard','listened'].includes(s.listenedFilter))  currentListenedFilter = s.listenedFilter;
+} catch(e) {}
+
 function getFiltered(year, type) {
   return ALL_RELEASES.filter(r => {
     if (r.year !== year) return false;
@@ -579,7 +588,7 @@ function buildYearTabs() {
     `<button class="year-badge ${y===currentYear?'active':''}" onclick="selectYear(${y})">${y}</button>`
   ).join('');
 }
-function selectYear(y) { currentYear = y; buildYearTabs(); render(); }
+function selectYear(y) { currentYear = y; buildYearTabs(); render(); saveState(); }
 
 function buildStats(releases) {
   const albums  = releases.filter(r => r.type==='Album').length;
@@ -619,9 +628,9 @@ function buildMonthView(releases) {
             <div class="release-title" title="${esc(r.title)}">${esc(r.title)}</div>
             <div class="release-artist">${esc(r.artist)}</div>
             <div class="release-footer">
+              <a class="am-btn" href="${amUrl(r.artist,r.title)}" target="_blank" onclick="event.stopPropagation()" title="Apple Music">▶</a>
               <span class="type-badge ${r.type.toLowerCase()}">${r.type}</span>
               <span class="release-label">${esc(r.label)}</span>
-              <a class="am-btn" href="${amUrl(r.artist,r.title)}" target="_blank" onclick="event.stopPropagation()" title="Apple Music">▶</a>
               <div class="listened-btn${lDone?' done':''}" data-lkey="${esc(lKey)}" onclick="event.stopPropagation();toggleListened(this)" title="Mark as heard">✓</div>
             </div>
           </div>`;
@@ -753,13 +762,14 @@ function setListenedFilter(val) {
   currentListenedFilter = currentListenedFilter === val ? 'all' : val;
   document.querySelector('.filter-unheard').classList.toggle('active', currentListenedFilter==='unheard');
   document.querySelector('.filter-listened').classList.toggle('active', currentListenedFilter==='listened');
-  render();
+  render(); saveState();
 }
 function setDisplayMode(mode) {
   currentDisplayMode = mode;
   document.getElementById('btn-cards').classList.toggle('active', mode==='cards');
   document.getElementById('btn-table').classList.toggle('active', mode==='table');
   if (currentView === 'months') render();
+  saveState();
 }
 function switchView(view) {
   currentView = view;
@@ -768,18 +778,42 @@ function switchView(view) {
   document.getElementById('view-artists').style.display = view==='artists' ? 'block' : 'none';
   document.getElementById('search-bar').classList.toggle('visible', view==='artists');
   document.getElementById('view-toggle-wrapper').style.display = view === 'months' ? '' : 'none';
-  render();
+  render(); saveState();
 }
 function setFilter(type) {
   currentFilter = currentFilter === type ? 'all' : type;
   document.querySelector('.filter-album').classList.toggle('active', currentFilter==='Album');
   document.querySelector('.filter-single').classList.toggle('active', currentFilter==='Single');
-  render();
+  render(); saveState();
 }
 function render() {
   buildStats(getFiltered(currentYear, currentFilter));
   if (currentView==='months') buildMonthView(getFiltered(currentYear, currentFilter));
   else buildArtistView();
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('aria_state', JSON.stringify({
+      view: currentView, displayMode: currentDisplayMode, year: currentYear,
+      filter: currentFilter, listenedFilter: currentListenedFilter,
+    }));
+  } catch(e) {}
+}
+
+function applyState() {
+  buildYearTabs();
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.view===currentView));
+  document.getElementById('view-months').style.display  = currentView==='months'  ? 'block' : 'none';
+  document.getElementById('view-artists').style.display = currentView==='artists' ? 'block' : 'none';
+  document.getElementById('search-bar').classList.toggle('visible', currentView==='artists');
+  document.getElementById('view-toggle-wrapper').style.display = currentView === 'months' ? '' : 'none';
+  document.getElementById('btn-cards').classList.toggle('active', currentDisplayMode==='cards');
+  document.getElementById('btn-table').classList.toggle('active', currentDisplayMode==='table');
+  document.querySelector('.filter-album').classList.toggle('active', currentFilter==='Album');
+  document.querySelector('.filter-single').classList.toggle('active', currentFilter==='Single');
+  document.querySelector('.filter-unheard').classList.toggle('active', currentListenedFilter==='unheard');
+  document.querySelector('.filter-listened').classList.toggle('active', currentListenedFilter==='listened');
 }
 
 // Init
