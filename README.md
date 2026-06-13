@@ -20,6 +20,16 @@ pip install pdfplumber
 
 `pdfplumber` will also be auto-installed the first time the script runs if it's missing.
 
+## Auto-regenerate on push
+
+A pre-push git hook regenerates `index.html` automatically before each push. Run this once to activate it:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+If the hook finds that `index.html` changed, it will abort the push and ask you to commit the update first.
+
 ## Configuration
 
 Edit the variables at the top of `generate_releases.py`:

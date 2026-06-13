@@ -1,0 +1,20 @@
+#!/bin/sh
+# Regenerates index.html before pushing. Aborts if the result has uncommitted changes.
+
+REPO=$(git rev-parse --show-toplevel)
+PDF_DIR="$HOME/IHGT/Research/ARIA"
+
+if [ ! -d "$PDF_DIR" ]; then
+  echo "pre-push: PDF_DIR not found, skipping regeneration"
+  exit 0
+fi
+
+echo "pre-push: regenerating index.html..."
+python3 "$REPO/generate_releases.py" || exit 1
+
+if [ -n "$(git status --porcelain "$REPO/index.html")" ]; then
+  echo ""
+  echo "pre-push: index.html was updated — commit it before pushing:"
+  echo "  git add index.html && git commit -m 'Regenerate index.html' && git push"
+  exit 1
+fi

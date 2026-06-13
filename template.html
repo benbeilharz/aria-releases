@@ -324,7 +324,7 @@
     }
     .nav-tab { padding: 14px 14px; font-size: 13px; }
     .view-toggle-wrapper {
-      padding: 0 12px;
+      padding: 8px 12px;
       border-left: none;
       margin-left: 0;
       border-left: 1px solid var(--border);
@@ -414,12 +414,11 @@
     <div class="nav-tab" data-view="artists" onclick="switchView('artists')">🎤 Artists</div>
   </div>
   <div class="nav-filters" id="filter-row">
-    <div class="filter-btn filter-all active" onclick="setFilter('all')">All</div>
     <div class="filter-btn filter-album" onclick="setFilter('Album')">Albums</div>
     <div class="filter-btn filter-single" onclick="setFilter('Single')">Singles</div>
     <div class="nav-divider"></div>
     <div class="filter-btn filter-unheard" onclick="setListenedFilter('unheard')">Unheard</div>
-    <div class="filter-btn filter-listened" onclick="setListenedFilter('listened')">Listened</div>
+    <div class="filter-btn filter-listened" onclick="setListenedFilter('listened')">Heard</div>
   </div>
   <div class="view-toggle-wrapper" id="view-toggle-wrapper">
     <div class="view-toggle">
@@ -602,11 +601,11 @@ function buildMonthView(releases) {
     byMonth[r.month][r.date].push(r);
   });
   let html = '';
-  Object.keys(byMonth).sort((a,b) => a-b).forEach(mon => {
+  Object.keys(byMonth).sort((a,b) => b-a).forEach(mon => {
     const monthReleases = Object.values(byMonth[mon]).flat();
     const sortedDates = Object.keys(byMonth[mon]).sort((a,b) => {
       const [da,ma,ya] = a.split(' '), [db,mb,yb] = b.split(' ');
-      return new Date(`${ma} ${da} ${ya}`) - new Date(`${mb} ${db} ${yb}`);
+      return new Date(`${mb} ${db} ${yb}`) - new Date(`${ma} ${da} ${ya}`);
     });
     html += `<div class="month-section"><div class="month-header"><span class="month-pill">${MNAMES[mon]}</span><span class="month-count">${plural(monthReleases.length,'release')}</span></div>`;
     if (currentDisplayMode === 'cards') {
@@ -623,7 +622,7 @@ function buildMonthView(releases) {
               <span class="type-badge ${r.type.toLowerCase()}">${r.type}</span>
               <span class="release-label">${esc(r.label)}</span>
               <a class="am-btn" href="${amUrl(r.artist,r.title)}" target="_blank" onclick="event.stopPropagation()" title="Apple Music">▶</a>
-              <div class="listened-btn${lDone?' done':''}" data-lkey="${esc(lKey)}" onclick="event.stopPropagation();toggleListened(this)" title="Mark as listened">✓</div>
+              <div class="listened-btn${lDone?' done':''}" data-lkey="${esc(lKey)}" onclick="event.stopPropagation();toggleListened(this)" title="Mark as heard">✓</div>
             </div>
           </div>`;
         });
@@ -650,7 +649,7 @@ function buildMonthView(releases) {
             <td class="col-artist">${esc(r.artist)}</td>
             <td><span class="type-badge ${r.type.toLowerCase()}">${r.type}</span></td>
             <td class="col-label col-label-td">${esc(r.label)}</td>
-            <td class="col-check"><div class="listened-btn${lDone?' done':''}" data-lkey="${esc(lKey)}" onclick="event.stopPropagation();toggleListened(this)" title="Mark as listened">✓</div></td>
+            <td class="col-check"><div class="listened-btn${lDone?' done':''}" data-lkey="${esc(lKey)}" onclick="event.stopPropagation();toggleListened(this)" title="Mark as heard">✓</div></td>
           </tr>`;
         });
       });
@@ -713,7 +712,7 @@ function buildDetail(artist, releases) {
           <span class="type-badge ${r.type.toLowerCase()}">${r.type}</span>
           <span class="release-label">${esc(r.label)}</span>
           <a class="am-btn" href="${amUrl(r.artist,r.title)}" target="_blank" title="Apple Music">▶</a>
-          <div class="listened-btn${lDone?' done':''}" data-lkey="${esc(lKey)}" onclick="toggleListened(this)" title="Mark as listened">✓</div>
+          <div class="listened-btn${lDone?' done':''}" data-lkey="${esc(lKey)}" onclick="toggleListened(this)" title="Mark as heard">✓</div>
         </div>
       </div>
     </div>`;
@@ -772,10 +771,9 @@ function switchView(view) {
   render();
 }
 function setFilter(type) {
-  currentFilter = type;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  const map = {all:'.filter-all', Album:'.filter-album', Single:'.filter-single'};
-  if (map[type]) document.querySelector(map[type]).classList.add('active');
+  currentFilter = currentFilter === type ? 'all' : type;
+  document.querySelector('.filter-album').classList.toggle('active', currentFilter==='Album');
+  document.querySelector('.filter-single').classList.toggle('active', currentFilter==='Single');
   render();
 }
 function render() {
