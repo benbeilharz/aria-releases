@@ -151,46 +151,123 @@ def build_html(releases: list[dict], supabase_url: str, supabase_key: str) -> st
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }}
 
+  /* ── Login Screen ─────────────────────────────────────────────────────────── */
+  #login-screen {{
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #7C3AED 0%, #EC4899 50%, #F59E0B 100%);
+    padding: 24px;
+  }}
+  .login-card {{
+    background: white;
+    border-radius: 20px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+  }}
+  .login-logo {{
+    width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, #7C3AED, #EC4899);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 900; color: white;
+    margin: 0 auto 20px; letter-spacing: -1px;
+  }}
+  .login-card h2 {{ font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 6px; }}
+  .login-card .login-sub {{ color: var(--text2); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }}
+  .login-email-input {{
+    width: 100%; padding: 12px 16px;
+    border: 2px solid var(--border); border-radius: 10px;
+    font-size: 16px; color: var(--text); background: var(--bg);
+    outline: none; transition: border-color 0.15s;
+    margin-bottom: 12px; display: block;
+  }}
+  .login-email-input:focus {{ border-color: #7C3AED; }}
+  .login-submit-btn {{
+    width: 100%; padding: 13px;
+    background: linear-gradient(135deg, #7C3AED, #EC4899);
+    color: white; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: opacity 0.15s; letter-spacing: 0.2px;
+  }}
+  .login-submit-btn:hover {{ opacity: 0.9; }}
+  .login-submit-btn:disabled {{ opacity: 0.55; cursor: not-allowed; }}
+  .login-error {{ color: #EF4444; font-size: 13px; margin-top: 12px; min-height: 20px; }}
+  .login-sent {{ padding: 12px 0; }}
+  .login-sent-icon {{ font-size: 40px; margin-bottom: 12px; }}
+  .login-sent p {{ color: var(--text2); font-size: 14px; line-height: 1.6; }}
+  .login-sent strong {{ color: var(--text); }}
+
+  /* ── Header ───────────────────────────────────────────────────────────────── */
   header {{
     background: linear-gradient(135deg, #7C3AED 0%, #EC4899 50%, #F59E0B 100%);
-    padding: 28px 32px 24px;
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    padding: 24px 32px 20px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
   }}
-  .header-left {{ display: flex; align-items: center; gap: 16px; }}
+  .header-left {{ display: flex; align-items: center; gap: 14px; }}
   .logo {{
-    width: 52px; height: 52px; border-radius: 50%;
+    width: 48px; height: 48px; border-radius: 50%;
     background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);
     display: flex; align-items: center; justify-content: center;
-    font-size: 24px; font-weight: 900; color: white; letter-spacing: -1px;
-    border: 2px solid rgba(255,255,255,0.4);
+    font-size: 20px; font-weight: 900; color: white; letter-spacing: -1px;
+    border: 2px solid rgba(255,255,255,0.4); flex-shrink: 0;
   }}
-  header h1 {{ font-size: 28px; font-weight: 800; color: white; letter-spacing: -0.5px; }}
-  header p {{ font-size: 13px; color: rgba(255,255,255,0.75); margin-top: 2px; }}
+  header h1 {{ font-size: 24px; font-weight: 800; color: white; letter-spacing: -0.5px; }}
+  header p {{ font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 2px; }}
+  .header-right {{ display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }}
   .year-badge {{
     background: rgba(255,255,255,0.25); color: white; border: 1.5px solid rgba(255,255,255,0.4);
-    border-radius: 999px; padding: 6px 18px; font-size: 14px; font-weight: 700; cursor: pointer;
+    border-radius: 999px; padding: 5px 16px; font-size: 14px; font-weight: 700; cursor: pointer;
     transition: background 0.15s;
   }}
   .year-badge:hover {{ background: rgba(255,255,255,0.35); }}
   .year-badge.active {{ background: white; color: #7C3AED; }}
+  .sync-indicator {{ font-size: 11px; color: rgba(255,255,255,0.8); display: flex; align-items: center; gap: 6px; }}
+  .sync-dot {{ width: 7px; height: 7px; border-radius: 50%; background: #10B981; transition: background 0.3s; flex-shrink: 0; }}
+  .sync-dot.syncing {{ background: #F59E0B; animation: pulse 1s infinite; }}
+  .sync-dot.error {{ background: #EF4444; }}
+  @keyframes pulse {{ 0%,100% {{ opacity:1 }} 50% {{ opacity:0.4 }} }}
+  .signout-btn {{
+    font-size: 12px; color: white; cursor: pointer;
+    background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 6px; padding: 4px 10px; transition: background 0.15s;
+    white-space: nowrap;
+  }}
+  .signout-btn:hover {{ background: rgba(255,255,255,0.3); }}
 
+  /* ── Nav ──────────────────────────────────────────────────────────────────── */
   .nav {{
-    display: flex; align-items: center;
-    background: var(--surface); border-bottom: 1.5px solid var(--border);
-    padding: 0 32px; position: sticky; top: 0; z-index: 100;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--surface);
+    border-bottom: 1.5px solid var(--border);
+    padding: 0 32px;
+    position: sticky; top: 0; z-index: 100;
     box-shadow: 0 1px 8px rgba(0,0,0,0.06);
   }}
   .nav-tabs {{ display: flex; }}
   .nav-tab {{
-    padding: 16px 24px; font-size: 14px; font-weight: 600; color: var(--text2);
+    padding: 16px 22px; font-size: 14px; font-weight: 600; color: var(--text2);
     cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.15s; user-select: none;
+    white-space: nowrap;
   }}
   .nav-tab:hover {{ color: var(--nav-active); }}
   .nav-tab.active {{ color: var(--nav-active); border-bottom-color: var(--nav-active); }}
-  .nav-filters {{ margin-left: auto; display: flex; gap: 8px; align-items: center; }}
+
+  /* Filters: flex:1 on desktop so they fill space and right-align; full-width row on mobile */
+  .nav-filters {{
+    display: flex; align-items: center; gap: 8px;
+    flex: 1; justify-content: flex-end;
+    padding: 10px 0 10px 16px;
+  }}
   .filter-btn {{
-    padding: 6px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
     cursor: pointer; border: 2px solid transparent; transition: all 0.15s; user-select: none;
+    white-space: nowrap; flex-shrink: 0;
   }}
   .filter-all {{ background: var(--surface2); color: var(--text); border-color: var(--border); }}
   .filter-all.active {{ background: var(--text); color: white; border-color: var(--text); }}
@@ -198,11 +275,19 @@ def build_html(releases: list[dict], supabase_url: str, supabase_key: str) -> st
   .filter-album.active {{ background: var(--album); color: white; border-color: var(--album); }}
   .filter-single {{ background: var(--single-bg); color: var(--single); border-color: var(--single-bg); }}
   .filter-single.active {{ background: var(--single); color: white; border-color: var(--single); }}
-  .nav-divider {{ width: 1px; height: 20px; background: var(--border); margin: 0 4px; }}
+  .nav-divider {{ width: 1px; height: 20px; background: var(--border); margin: 0 2px; flex-shrink: 0; }}
   .filter-unheard {{ background: #D1FAE5; color: #065F46; border-color: #D1FAE5; }}
   .filter-unheard.active {{ background: #10B981; color: white; border-color: #10B981; }}
   .filter-listened {{ background: #D1FAE5; color: #065F46; border-color: #D1FAE5; }}
   .filter-listened.active {{ background: #059669; color: white; border-color: #059669; }}
+
+  /* View toggle lives in its own wrapper, right of filters */
+  .view-toggle-wrapper {{
+    display: flex; align-items: center;
+    padding: 10px 0 10px 12px;
+    border-left: 1px solid var(--border);
+    margin-left: 4px; flex-shrink: 0;
+  }}
   .view-toggle {{ display: flex; gap: 2px; background: var(--surface2); border-radius: 8px; padding: 3px; }}
   .view-toggle-btn {{
     padding: 5px 10px; border-radius: 6px; font-size: 13px; cursor: pointer;
@@ -210,13 +295,8 @@ def build_html(releases: list[dict], supabase_url: str, supabase_key: str) -> st
   }}
   .view-toggle-btn.active {{ background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
 
-  .sync-indicator {{ font-size: 11px; color: rgba(255,255,255,0.8); display: flex; align-items: center; gap: 6px; }}
-  .sync-dot {{ width: 7px; height: 7px; border-radius: 50%; background: #10B981; transition: background 0.3s; }}
-  .sync-dot.syncing {{ background: #F59E0B; animation: pulse 1s infinite; }}
-  .sync-dot.error {{ background: #EF4444; }}
-  @keyframes pulse {{ 0%,100% {{ opacity:1 }} 50% {{ opacity:0.4 }} }}
-
-  .search-bar {{ padding: 16px 32px; background: var(--surface); border-bottom: 1.5px solid var(--border); display: none; }}
+  /* ── Search bar ───────────────────────────────────────────────────────────── */
+  .search-bar {{ padding: 14px 32px; background: var(--surface); border-bottom: 1.5px solid var(--border); display: none; }}
   .search-bar.visible {{ display: block; }}
   .search-input {{
     width: 100%; max-width: 480px; padding: 10px 16px;
@@ -226,31 +306,33 @@ def build_html(releases: list[dict], supabase_url: str, supabase_key: str) -> st
   .search-input:focus {{ border-color: var(--nav-active); }}
   .search-input::placeholder {{ color: var(--text2); }}
 
-  main {{ padding: 32px; max-width: 1280px; margin: 0 auto; }}
+  /* ── Main content ─────────────────────────────────────────────────────────── */
+  main {{ padding: 28px 32px; max-width: 1280px; margin: 0 auto; }}
 
-  .stats {{ display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }}
+  .stats {{ display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }}
   .stat-chip {{
     display: flex; align-items: center; gap: 8px;
     background: var(--surface); border: 1.5px solid var(--border);
-    border-radius: 999px; padding: 8px 18px; font-size: 13px;
+    border-radius: 999px; padding: 7px 16px; font-size: 13px;
   }}
-  .stat-dot {{ width: 8px; height: 8px; border-radius: 50%; }}
+  .stat-dot {{ width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }}
   .stat-num {{ font-weight: 700; color: var(--text); }}
   .stat-label {{ color: var(--text2); }}
 
-  .month-section {{ margin-bottom: 48px; }}
-  .month-header {{ display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }}
-  .month-pill {{ font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }}
+  .month-section {{ margin-bottom: 44px; }}
+  .month-header {{ display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }}
+  .month-pill {{ font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }}
   .month-count {{ background: var(--surface2); color: var(--text2); border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 600; }}
 
-  .week-group {{ margin-bottom: 24px; }}
+  .week-group {{ margin-bottom: 22px; }}
   .week-header {{
     font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
     color: var(--text2); margin-bottom: 12px; display: flex; align-items: center; gap: 10px;
   }}
   .week-header::after {{ content: ''; flex: 1; height: 1px; background: var(--border); }}
 
-  .release-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }}
+  /* ── Release cards ────────────────────────────────────────────────────────── */
+  .release-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }}
   .release-card {{
     background: var(--surface); border: 1.5px solid var(--border);
     border-radius: var(--radius); padding: 14px 16px;
@@ -264,14 +346,13 @@ def build_html(releases: list[dict], supabase_url: str, supabase_key: str) -> st
   .release-card.single:hover {{ box-shadow: 0 4px 16px rgba(236,72,153,0.15); }}
   .release-card.listened {{ opacity: 0.5; }}
   .release-card.listened .release-title {{ text-decoration: line-through; color: var(--text2); }}
-
   .release-title {{ font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
   .release-artist {{ font-size: 12px; color: var(--text2); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
   .release-footer {{ display: flex; align-items: center; gap: 4px; }}
-  .type-badge {{ font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 8px; border-radius: 4px; }}
+  .type-badge {{ font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }}
   .type-badge.album {{ background: var(--album-bg); color: var(--album); }}
   .type-badge.single {{ background: var(--single-bg); color: var(--single); }}
-  .release-label {{ font-size: 10px; color: var(--text2); font-weight: 500; flex: 1; }}
+  .release-label {{ font-size: 10px; color: var(--text2); font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
 
   .am-btn {{
     display: inline-flex; align-items: center; justify-content: center;
@@ -290,19 +371,22 @@ def build_html(releases: list[dict], supabase_url: str, supabase_key: str) -> st
   .listened-btn:hover {{ border-color: #10B981; color: #10B981; }}
   .listened-btn.done {{ background: #10B981; border-color: #10B981; color: white; }}
 
-  .release-table {{ width: 100%; border-collapse: collapse; }}
+  /* ── Table view ───────────────────────────────────────────────────────────── */
+  .table-wrapper {{ overflow-x: auto; -webkit-overflow-scrolling: touch; }}
+  .release-table {{ width: 100%; border-collapse: collapse; min-width: 480px; }}
   .release-table thead th {{
     text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.8px; color: var(--text2); padding: 8px 12px;
     border-bottom: 1.5px solid var(--border); background: var(--surface);
     position: sticky; top: 57px; z-index: 2;
+    white-space: nowrap;
   }}
   .release-table tbody tr {{ border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }}
   .release-table tbody tr:hover {{ background: var(--surface2); }}
   .release-table tbody tr:last-child {{ border-bottom: none; }}
   .release-table td {{ padding: 7px 12px; font-size: 13px; vertical-align: middle; }}
-  .release-table .col-title {{ font-weight: 600; color: var(--text); max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
-  .release-table .col-artist {{ color: var(--text2); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+  .release-table .col-title {{ font-weight: 600; color: var(--text); max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+  .release-table .col-artist {{ color: var(--text2); max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
   .release-table .col-label {{ color: var(--text2); font-size: 11px; }}
   tr.listened td {{ opacity: 0.45; }}
   tr.listened .col-title-cell {{ text-decoration: line-through; }}
@@ -311,59 +395,125 @@ def build_html(releases: list[dict], supabase_url: str, supabase_key: str) -> st
   .col-play {{ width: 32px; text-align: center; }}
   .col-check {{ width: 36px; text-align: center; }}
 
-  .artist-layout {{ display: grid; grid-template-columns: 300px 1fr; gap: 24px; align-items: start; }}
+  /* ── Artist view ──────────────────────────────────────────────────────────── */
+  .artist-layout {{ display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }}
   .artist-sidebar {{
     background: var(--surface); border: 1.5px solid var(--border);
     border-radius: var(--radius); overflow: hidden;
     position: sticky; top: 72px; max-height: calc(100vh - 100px); overflow-y: auto;
   }}
-  .artist-sidebar-header {{ padding: 16px 20px; border-bottom: 1.5px solid var(--border); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); position: sticky; top: 0; background: var(--surface); z-index: 1; }}
-  .alpha-index {{ display: flex; flex-wrap: wrap; gap: 4px; padding: 12px 20px; border-bottom: 1.5px solid var(--border); }}
-  .alpha-btn {{ width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; cursor: pointer; color: var(--text2); transition: all 0.1s; }}
+  .artist-sidebar-header {{ padding: 14px 18px; border-bottom: 1.5px solid var(--border); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); position: sticky; top: 0; background: var(--surface); z-index: 1; }}
+  .alpha-index {{ display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 16px; border-bottom: 1.5px solid var(--border); }}
+  .alpha-btn {{ width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; cursor: pointer; color: var(--text2); transition: all 0.1s; }}
   .alpha-btn:hover {{ background: var(--surface2); color: var(--text); }}
   .alpha-btn.has-artists {{ color: var(--nav-active); }}
-  .artist-list {{ padding: 8px; }}
-  .artist-item {{ padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text); transition: all 0.12s; display: flex; align-items: center; justify-content: space-between; gap: 8px; }}
+  .artist-list {{ padding: 6px; }}
+  .artist-item {{ padding: 9px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text); transition: all 0.12s; display: flex; align-items: center; justify-content: space-between; gap: 8px; }}
   .artist-item:hover {{ background: var(--surface2); }}
   .artist-item.active {{ background: var(--album); color: white; }}
   .artist-item .artist-name {{ flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
   .artist-item .artist-count {{ font-size: 11px; font-weight: 700; opacity: 0.6; background: rgba(0,0,0,0.08); border-radius: 999px; padding: 2px 7px; min-width: 24px; text-align: center; flex-shrink: 0; }}
   .artist-item.active .artist-count {{ background: rgba(255,255,255,0.25); opacity: 1; }}
-
-  .artist-detail {{ background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 28px; min-height: 300px; }}
+  .artist-detail {{ background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 24px; min-height: 300px; }}
   .artist-detail-empty {{ display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; color: var(--text2); gap: 8px; }}
   .artist-detail-empty .big-icon {{ font-size: 48px; }}
-  .artist-detail-header {{ margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1.5px solid var(--border); }}
-  .artist-detail-name {{ font-size: 28px; font-weight: 800; color: var(--text); margin-bottom: 8px; }}
-  .artist-detail-meta {{ display: flex; gap: 12px; flex-wrap: wrap; }}
+  .artist-detail-header {{ margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1.5px solid var(--border); }}
+  .artist-detail-name {{ font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 8px; }}
+  .artist-detail-meta {{ display: flex; gap: 10px; flex-wrap: wrap; }}
   .artist-meta-chip {{ font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: var(--surface2); color: var(--text2); }}
-
-  .timeline-item {{ display: grid; grid-template-columns: 120px 1fr; gap: 20px; margin-bottom: 12px; align-items: start; }}
+  .timeline-item {{ display: grid; grid-template-columns: 110px 1fr; gap: 16px; margin-bottom: 12px; align-items: start; }}
   .timeline-date {{ text-align: right; padding-top: 14px; font-size: 11px; font-weight: 700; color: var(--text2); letter-spacing: 0.5px; text-transform: uppercase; }}
   .timeline-card {{ background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; border-left: 4px solid; }}
   .timeline-card.album {{ border-left-color: var(--album); }}
   .timeline-card.single {{ border-left-color: var(--single); }}
-  .timeline-card-title {{ font-size: 14px; font-weight: 700; margin-bottom: 4px; }}
+  .timeline-card-title {{ font-size: 14px; font-weight: 700; margin-bottom: 6px; }}
   .timeline-card-meta {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }}
 
   .no-results {{ text-align: center; padding: 48px; color: var(--text2); font-size: 15px; }}
   .hidden {{ display: none !important; }}
-
   .artist-sidebar::-webkit-scrollbar {{ width: 4px; }}
   .artist-sidebar::-webkit-scrollbar-track {{ background: transparent; }}
   .artist-sidebar::-webkit-scrollbar-thumb {{ background: var(--border); border-radius: 4px; }}
 
+  /* ── Responsive ───────────────────────────────────────────────────────────── */
   @media (max-width: 768px) {{
-    header {{ padding: 20px 16px; }}
-    .nav {{ padding: 0 16px; overflow-x: auto; }}
-    main {{ padding: 20px 16px; }}
+    header {{ padding: 16px; gap: 10px; }}
+    header h1 {{ font-size: 20px; }}
+    header p {{ display: none; }}
+
+    /* Nav: tabs + view-toggle on row 1; filters scroll on row 2 */
+    .nav {{ padding: 0; align-items: stretch; }}
+    .nav-tabs {{
+      flex: 1;
+      padding: 0 4px 0 12px;
+    }}
+    .nav-tab {{ padding: 14px 14px; font-size: 13px; }}
+    .view-toggle-wrapper {{
+      padding: 0 12px;
+      border-left: none;
+      margin-left: 0;
+      border-left: 1px solid var(--border);
+    }}
+    .nav-filters {{
+      flex: none;
+      width: 100%;
+      justify-content: flex-start;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+      scrollbar-width: none;
+      gap: 7px;
+    }}
+    .nav-filters::-webkit-scrollbar {{ display: none; }}
+
+    /* Disable sticky on table header (nav height varies on mobile) */
+    .release-table thead th {{ position: static; }}
+
+    main {{ padding: 16px; }}
+
+    /* 2-column card grid on mobile */
+    .release-grid {{ grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }}
+
+    /* Artists: stack sidebar above detail */
     .artist-layout {{ grid-template-columns: 1fr; }}
-    .artist-sidebar {{ position: static; max-height: 300px; }}
-    .timeline-item {{ grid-template-columns: 90px 1fr; }}
+    .artist-sidebar {{ position: static; max-height: 260px; }}
+    .timeline-item {{ grid-template-columns: 80px 1fr; gap: 10px; }}
+    .artist-detail {{ padding: 16px; }}
+    .artist-detail-name {{ font-size: 22px; }}
+
+    /* Hide label column in table on mobile */
+    .col-label-th, .col-label-td {{ display: none; }}
+  }}
+
+  @media (max-width: 400px) {{
+    /* Single column on very small screens */
+    .release-grid {{ grid-template-columns: 1fr 1fr; }}
   }}
 </style>
 </head>
 <body>
+
+<!-- ── Login Screen ──────────────────────────────────────────────────────────── -->
+<div id="login-screen" style="display:none">
+  <div class="login-card">
+    <div class="login-logo">AR</div>
+    <h2>ARIA New Releases</h2>
+    <div id="login-form">
+      <p class="login-sub">Sign in to track what you've listened to.</p>
+      <input class="login-email-input" id="login-email" type="email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')handleLogin()">
+      <button class="login-submit-btn" id="login-btn" onclick="handleLogin()">Send magic link</button>
+      <p class="login-error" id="login-msg"></p>
+    </div>
+    <div id="login-sent" class="login-sent" style="display:none">
+      <div class="login-sent-icon">✉️</div>
+      <p>Check your email for the sign-in link.<br><strong>You can close this tab after clicking it.</strong></p>
+    </div>
+  </div>
+</div>
+
+<!-- ── App ───────────────────────────────────────────────────────────────────── -->
+<div id="app" style="display:none">
 
 <header>
   <div class="header-left">
@@ -373,12 +523,13 @@ def build_html(releases: list[dict], supabase_url: str, supabase_key: str) -> st
       <p>Australian Recording Industry Association · Official Chart Data</p>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+  <div class="header-right">
     <div class="sync-indicator">
       <div class="sync-dot syncing" id="sync-dot"></div>
       <span id="sync-label">Loading…</span>
     </div>
     <div id="year-tabs" style="display:flex;gap:8px;"></div>
+    <button class="signout-btn" onclick="handleSignOut()">Sign out</button>
   </div>
 </header>
 
@@ -387,15 +538,16 @@ def build_html(releases: list[dict], supabase_url: str, supabase_key: str) -> st
     <div class="nav-tab active" data-view="months" onclick="switchView('months')">📅 Monthly</div>
     <div class="nav-tab" data-view="artists" onclick="switchView('artists')">🎤 Artists</div>
   </div>
-  <div class="nav-filters">
+  <div class="nav-filters" id="filter-row">
     <div class="filter-btn filter-all active" onclick="setFilter('all')">All</div>
     <div class="filter-btn filter-album" onclick="setFilter('Album')">Albums</div>
     <div class="filter-btn filter-single" onclick="setFilter('Single')">Singles</div>
     <div class="nav-divider"></div>
     <div class="filter-btn filter-unheard" onclick="setListenedFilter('unheard')">Unheard</div>
     <div class="filter-btn filter-listened" onclick="setListenedFilter('listened')">Listened</div>
-    <div class="nav-divider" id="view-toggle-divider"></div>
-    <div class="view-toggle" id="view-toggle-btns">
+  </div>
+  <div class="view-toggle-wrapper" id="view-toggle-wrapper">
+    <div class="view-toggle">
       <div class="view-toggle-btn active" id="btn-cards" onclick="setDisplayMode('cards')" title="Card view">▦</div>
       <div class="view-toggle-btn" id="btn-table" onclick="setDisplayMode('table')" title="Table view">☰</div>
     </div>
@@ -412,9 +564,9 @@ def build_html(releases: list[dict], supabase_url: str, supabase_key: str) -> st
   <div id="view-artists" style="display:none"></div>
 </main>
 
-<script>
-const ALL_RELEASES = {releases_json};
+</div><!-- /#app -->
 
+<script>
 // ── Supabase ──────────────────────────────────────────────────────────────────
 const {{ createClient }} = supabase;
 const sb = createClient('{supabase_url}', '{supabase_key}');
@@ -423,6 +575,7 @@ let listenedSet = new Set();
 function setSyncState(state) {{
   const dot   = document.getElementById('sync-dot');
   const label = document.getElementById('sync-label');
+  if (!dot) return;
   dot.className   = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : '');
   label.textContent = state === 'syncing' ? 'Loading…' : state === 'error' ? 'Sync error' : 'Synced';
 }}
@@ -438,7 +591,6 @@ async function toggleListened(btn) {{
   const key = btn.dataset.lkey;
   if (!key) return;
   const wasListened = listenedSet.has(key);
-  // Optimistic update
   if (wasListened) {{
     listenedSet.delete(key);
     btn.classList.remove('done');
@@ -449,19 +601,76 @@ async function toggleListened(btn) {{
     btn.closest('.release-card, tr')?.classList.add('listened');
   }}
   if (currentListenedFilter !== 'all') render();
-  // Persist to Supabase
   setSyncState('syncing');
   const {{ error }} = wasListened
     ? await sb.from('listened_releases').delete().eq('key', key)
     : await sb.from('listened_releases').insert({{ key }});
   setSyncState(error ? 'error' : 'ok');
   if (error) {{
-    // Revert on failure
     if (wasListened) {{ listenedSet.add(key);    btn.classList.add('done');    btn.closest('.release-card, tr')?.classList.add('listened'); }}
     else             {{ listenedSet.delete(key); btn.classList.remove('done'); btn.closest('.release-card, tr')?.classList.remove('listened'); }}
   }}
 }}
-// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+async function initAuth() {{
+  const {{ data: {{ session }} }} = await sb.auth.getSession();
+  if (session) {{
+    showApp();
+  }} else {{
+    document.getElementById('login-screen').style.display = 'flex';
+  }}
+  sb.auth.onAuthStateChange((event, session) => {{
+    if (event === 'SIGNED_IN')  showApp();
+    if (event === 'SIGNED_OUT') showLoginScreen();
+  }});
+}}
+
+function showLoginScreen() {{
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  // Reset login form
+  document.getElementById('login-form').style.display = 'block';
+  document.getElementById('login-sent').style.display = 'none';
+  const btn = document.getElementById('login-btn');
+  btn.textContent = 'Send magic link';
+  btn.disabled = false;
+  document.getElementById('login-msg').textContent = '';
+}}
+
+function showApp() {{
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadListened().then(() => {{ buildYearTabs(); render(); }});
+}}
+
+async function handleLogin() {{
+  const email = document.getElementById('login-email').value.trim();
+  if (!email) return;
+  const btn = document.getElementById('login-btn');
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+  document.getElementById('login-msg').textContent = '';
+  const {{ error }} = await sb.auth.signInWithOtp({{
+    email,
+    options: {{ emailRedirectTo: window.location.href.split('#')[0] }}
+  }});
+  if (error) {{
+    document.getElementById('login-msg').textContent = error.message;
+    btn.textContent = 'Send magic link';
+    btn.disabled = false;
+  }} else {{
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('login-sent').style.display = 'block';
+  }}
+}}
+
+async function handleSignOut() {{
+  await sb.auth.signOut();
+}}
+
+// ── App state ─────────────────────────────────────────────────────────────────
+const ALL_RELEASES = {releases_json};
 
 let currentView          = 'months';
 let currentFilter        = 'all';
@@ -504,7 +713,7 @@ function buildStats(releases) {{
     <div class="stat-chip"><div class="stat-dot" style="background:#7C3AED"></div><span class="stat-num">${{albums}}</span><span class="stat-label">Albums</span></div>
     <div class="stat-chip"><div class="stat-dot" style="background:#EC4899"></div><span class="stat-num">${{singles}}</span><span class="stat-label">Singles</span></div>
     <div class="stat-chip"><div class="stat-dot" style="background:#06B6D4"></div><span class="stat-num">${{artists}}</span><span class="stat-label">Artists</span></div>
-    <div class="stat-chip"><div class="stat-dot" style="background:#F59E0B"></div><span class="stat-num">${{releases.length}}</span><span class="stat-label">Total Releases</span></div>`;
+    <div class="stat-chip"><div class="stat-dot" style="background:#F59E0B"></div><span class="stat-num">${{releases.length}}</span><span class="stat-label">Total</span></div>`;
 }}
 
 function buildMonthView(releases) {{
@@ -544,11 +753,18 @@ function buildMonthView(releases) {{
         html += `</div></div>`;
       }});
     }} else {{
-      html += `<table class="release-table"><thead><tr><th class="col-play"></th><th>Title</th><th>Artist</th><th>Type</th><th>Label</th><th>Date</th><th class="col-check"></th></tr></thead><tbody>`;
+      html += `<div class="table-wrapper"><table class="release-table"><thead><tr>
+        <th class="col-play"></th>
+        <th>Title</th>
+        <th>Artist</th>
+        <th>Type</th>
+        <th class="col-label-th">Label</th>
+        <th class="col-check"></th>
+      </tr></thead><tbody>`;
       sortedDates.forEach(date => {{
         const [d,m,y] = date.split(' ');
         const fmt = new Date(`${{m}} ${{d}} ${{y}}`).toLocaleDateString('en-AU',{{weekday:'long',day:'numeric',month:'long'}});
-        html += `<tr class="table-date-row"><td colspan="7">${{fmt}} · ${{plural(byMonth[mon][date].length,'release')}}</td></tr>`;
+        html += `<tr class="table-date-row"><td colspan="6">${{fmt}} · ${{plural(byMonth[mon][date].length,'release')}}</td></tr>`;
         byMonth[mon][date].forEach(r => {{
           const lKey = listenedKey(r), lDone = isListened(r);
           html += `<tr class="${{lDone?'listened':''}}" onclick="goToArtist(${{JSON.stringify(r.artist)}})">
@@ -556,13 +772,12 @@ function buildMonthView(releases) {{
             <td class="col-title col-title-cell" title="${{esc(r.title)}}">${{esc(r.title)}}</td>
             <td class="col-artist">${{esc(r.artist)}}</td>
             <td><span class="type-badge ${{r.type.toLowerCase()}}">${{r.type}}</span></td>
-            <td class="col-label">${{esc(r.label)}}</td>
-            <td class="col-label">${{fmt}}</td>
+            <td class="col-label col-label-td">${{esc(r.label)}}</td>
             <td class="col-check"><div class="listened-btn${{lDone?' done':''}}" data-lkey="${{esc(lKey)}}" onclick="event.stopPropagation();toggleListened(this)" title="Mark as listened">✓</div></td>
           </tr>`;
         }});
       }});
-      html += `</tbody></table>`;
+      html += `</tbody></table></div>`;
     }}
     html += `</div>`;
   }});
@@ -677,8 +892,7 @@ function switchView(view) {{
   document.getElementById('view-artists').style.display  = view==='artists' ? 'block' : 'none';
   document.getElementById('search-bar').classList.toggle('visible', view==='artists');
   const showToggle = view === 'months';
-  document.getElementById('view-toggle-btns').style.display    = showToggle ? '' : 'none';
-  document.getElementById('view-toggle-divider').style.display = showToggle ? '' : 'none';
+  document.getElementById('view-toggle-wrapper').style.display = showToggle ? '' : 'none';
   render();
 }}
 function setFilter(type) {{
@@ -694,8 +908,8 @@ function render() {{
   else buildArtistView();
 }}
 
-// Init — fetch listened state, then render
-loadListened().then(() => {{ buildYearTabs(); render(); }});
+// Init
+initAuth();
 </script>
 </body>
 </html>"""
