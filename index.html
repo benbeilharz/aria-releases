@@ -19,7 +19,9 @@
     --album-bg: #EDE9FE;
     --single: #EC4899;
     --single-bg: #FCE7F3;
-    --nav-active: #7C3AED;
+    --aria-red: #F4112C;
+    --aria-red-dark: #C70E23;
+    --nav-active: var(--aria-red);
     --radius: 12px;
     --shadow: 0 2px 12px rgba(124,58,237,0.08);
   }
@@ -32,7 +34,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #7C3AED 0%, #EC4899 50%, #F59E0B 100%);
+    background: var(--aria-red);
     padding: 24px;
   }
   .login-card {
@@ -45,11 +47,7 @@
     box-shadow: 0 24px 64px rgba(0,0,0,0.25);
   }
   .login-logo {
-    width: 64px; height: 64px; border-radius: 50%;
-    background: linear-gradient(135deg, #7C3AED, #EC4899);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 26px; font-weight: 900; color: white;
-    margin: 0 auto 20px; letter-spacing: -1px;
+    height: 46px; width: auto; display: block; margin: 0 auto 20px;
   }
   .login-card h2 { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
   .login-card .login-sub { color: var(--text2); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
@@ -63,7 +61,7 @@
   .login-email-input:focus { border-color: #7C3AED; }
   .login-submit-btn {
     width: 100%; padding: 13px;
-    background: linear-gradient(135deg, #7C3AED, #EC4899);
+    background: var(--aria-red);
     color: white; border: none; border-radius: 10px;
     font-size: 15px; font-weight: 700; cursor: pointer;
     transition: opacity 0.15s; letter-spacing: 0.2px;
@@ -78,20 +76,15 @@
 
   /* ── Header ───────────────────────────────────────────────────────────────── */
   header {
-    background: linear-gradient(135deg, #7C3AED 0%, #EC4899 50%, #F59E0B 100%);
-    padding: 24px 32px 20px;
+    background: var(--aria-red);
+    padding: 18px 32px;
     display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
   }
-  .header-left { display: flex; align-items: center; gap: 14px; }
-  .logo {
-    width: 48px; height: 48px; border-radius: 50%;
-    background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; font-weight: 900; color: white; letter-spacing: -1px;
-    border: 2px solid rgba(255,255,255,0.4); flex-shrink: 0;
-  }
-  header h1 { font-size: 24px; font-weight: 800; color: white; letter-spacing: -0.5px; }
-  header p { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .aria-logo-img { height: 31px; width: auto; display: block; flex-shrink: 0; }
+  .header-titles { border-left: 1.5px solid rgba(255,255,255,0.4); padding-left: 16px; }
+  header h1 { font-size: 22px; font-weight: 800; color: white; letter-spacing: -0.5px; }
+  header p { font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 2px; }
   .header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .year-badge {
     background: rgba(255,255,255,0.25); color: white; border: 1.5px solid rgba(255,255,255,0.4);
@@ -99,7 +92,7 @@
     transition: background 0.15s;
   }
   .year-badge:hover { background: rgba(255,255,255,0.35); }
-  .year-badge.active { background: white; color: #7C3AED; }
+  .year-badge.active { background: white; color: var(--aria-red); }
   .sync-indicator { font-size: 11px; color: rgba(255,255,255,0.8); display: flex; align-items: center; gap: 6px; }
   .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #10B981; transition: background 0.3s; flex-shrink: 0; }
   .sync-dot.syncing { background: #F59E0B; animation: pulse 1s infinite; }
@@ -114,15 +107,12 @@
   .signout-btn:hover { background: rgba(255,255,255,0.3); }
 
   /* ── Nav ──────────────────────────────────────────────────────────────────── */
-  .nav {
+  /* Tabs bar — NOT sticky, scrolls away with the page */
+  .nav-tabs-bar {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
     background: var(--surface);
     border-bottom: 1.5px solid var(--border);
     padding: 0 32px;
-    position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
   }
   .nav-tabs { display: flex; }
   .nav-tab {
@@ -133,12 +123,22 @@
   .nav-tab:hover { color: var(--nav-active); }
   .nav-tab.active { color: var(--nav-active); border-bottom-color: var(--nav-active); }
 
-  /* Filters: flex:1 on desktop so they fill space and right-align; full-width row on mobile */
+  /* Controls bar — sticky: filters + view toggle share one line */
+  .nav-controls {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface);
+    border-bottom: 1.5px solid var(--border);
+    padding: 8px 32px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+  }
+
+  /* Filters: flex:1 so they fill the space; view toggle is pushed to the right */
   .nav-filters {
     display: flex; align-items: center; gap: 8px;
-    flex: 1; justify-content: flex-end;
-    padding: 10px 0 10px 16px;
+    flex: 1 1 auto; min-width: 0;
   }
+  .filter-btn .lbl-short { display: none; }
   .filter-btn {
     padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
     cursor: pointer; border: 2px solid transparent; transition: all 0.15s; user-select: none;
@@ -156,10 +156,10 @@
   .filter-listened { background: #D1FAE5; color: #065F46; border-color: #D1FAE5; }
   .filter-listened.active { background: #059669; color: white; border-color: #059669; }
 
-  /* View toggle lives in its own wrapper, right of filters */
+  /* View toggle lives in its own wrapper, pinned to the right of the filters */
   .view-toggle-wrapper {
     display: flex; align-items: center;
-    padding: 10px 0 10px 12px;
+    padding-left: 12px;
     border-left: 1px solid var(--border);
     margin-left: 4px; flex-shrink: 0;
   }
@@ -274,7 +274,7 @@
   .artist-sidebar {
     background: var(--surface); border: 1.5px solid var(--border);
     border-radius: var(--radius); overflow: hidden;
-    position: sticky; top: 72px; max-height: calc(100vh - 100px); overflow-y: auto;
+    position: sticky; top: 60px; max-height: calc(100vh - 88px); overflow-y: auto;
   }
   .artist-sidebar-header { padding: 14px 18px; border-bottom: 1.5px solid var(--border); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); position: sticky; top: 0; background: var(--surface); z-index: 1; }
   .alpha-index { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 16px; border-bottom: 1.5px solid var(--border); }
@@ -314,32 +314,26 @@
     header { padding: 16px; gap: 10px; }
     header h1 { font-size: 20px; }
     header p { display: none; }
+    .aria-logo-img { height: 26px; }
 
-    /* Nav: tabs + view-toggle on row 1; filters scroll on row 2 */
-    .nav { padding: 0; align-items: stretch; }
-    .nav-tabs {
-      flex: 1;
-      padding: 0 4px 0 12px;
-    }
-    .nav-tab { padding: 14px 14px; font-size: 13px; }
-    .view-toggle-wrapper {
-      padding: 8px 12px;
-      border-left: none;
-      margin-left: 0;
-      border-left: 1px solid var(--border);
-    }
+    /* Tabs bar (not sticky) */
+    .nav-tabs-bar { padding: 0 12px; }
+    .nav-tab { padding: 14px 16px; font-size: 13px; }
+
+    /* Controls bar (sticky): filters + view toggle all on one line.
+       Albums/Singles collapse to A/S so everything fits. */
+    .nav-controls { padding: 8px 12px; gap: 6px; }
     .nav-filters {
-      flex: none;
-      width: 100%;
-      justify-content: flex-start;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      padding: 10px 14px;
-      border-top: 1px solid var(--border);
       scrollbar-width: none;
-      gap: 7px;
+      gap: 6px;
     }
     .nav-filters::-webkit-scrollbar { display: none; }
+    .filter-album .lbl-full, .filter-single .lbl-full { display: none; }
+    .filter-album .lbl-short, .filter-single .lbl-short { display: inline; }
+    .filter-album, .filter-single { padding: 6px 0; min-width: 34px; text-align: center; }
+    .view-toggle-wrapper { padding-left: 10px; }
 
     main { padding: 16px; }
 
@@ -371,17 +365,14 @@
 <!-- ── Login Screen ──────────────────────────────────────────────────────────── -->
 <div id="login-screen" style="display:none">
   <div class="login-card">
-    <div class="login-logo">AR</div>
+    <img class="login-logo" src="aria_text.jpg" alt="ARIA">
     <h2>ARIA New Releases</h2>
     <div id="login-form">
       <p class="login-sub">Sign in to track what you've listened to.</p>
-      <input class="login-email-input" id="login-email" type="email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')handleLogin()">
-      <button class="login-submit-btn" id="login-btn" onclick="handleLogin()">Send magic link</button>
+      <input class="login-email-input" id="login-email" type="email" placeholder="your@email.com" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+      <input class="login-email-input" id="login-password" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')handleLogin()">
+      <button class="login-submit-btn" id="login-btn" onclick="handleLogin()">Sign in</button>
       <p class="login-error" id="login-msg"></p>
-    </div>
-    <div id="login-sent" class="login-sent" style="display:none">
-      <div class="login-sent-icon">✉️</div>
-      <p>Check your email for the sign-in link.<br><strong>You can close this tab after clicking it.</strong></p>
     </div>
   </div>
 </div>
@@ -391,10 +382,10 @@
 
 <header>
   <div class="header-left">
-    <div class="logo">AR</div>
-    <div>
-      <h1>ARIA New Releases</h1>
-      <p>Australian Recording Industry Association · Official Chart Data</p>
+    <img class="aria-logo-img" src="aria_text.jpg" alt="ARIA">
+    <div class="header-titles">
+      <h1>New Releases</h1>
+      <p>Australian Recording Industry Association</p>
     </div>
   </div>
   <div class="header-right">
@@ -407,14 +398,17 @@
   </div>
 </header>
 
-<nav class="nav">
+<nav class="nav-tabs-bar">
   <div class="nav-tabs">
     <div class="nav-tab active" data-view="months" onclick="switchView('months')">📅 Monthly</div>
     <div class="nav-tab" data-view="artists" onclick="switchView('artists')">🎤 Artists</div>
   </div>
+</nav>
+
+<div class="nav-controls">
   <div class="nav-filters" id="filter-row">
-    <div class="filter-btn filter-album" onclick="setFilter('Album')">Albums</div>
-    <div class="filter-btn filter-single" onclick="setFilter('Single')">Singles</div>
+    <div class="filter-btn filter-album" onclick="setFilter('Album')"><span class="lbl-full">Albums</span><span class="lbl-short">A</span></div>
+    <div class="filter-btn filter-single" onclick="setFilter('Single')"><span class="lbl-full">Singles</span><span class="lbl-short">S</span></div>
     <div class="nav-divider"></div>
     <div class="filter-btn filter-unheard" onclick="setListenedFilter('unheard')">Unheard</div>
     <div class="filter-btn filter-listened" onclick="setListenedFilter('listened')">Heard</div>
@@ -425,7 +419,7 @@
       <div class="view-toggle-btn" id="btn-table" onclick="setDisplayMode('table')" title="Table view">☰</div>
     </div>
   </div>
-</nav>
+</div>
 
 <div class="search-bar" id="search-bar">
   <input class="search-input" id="artist-search" type="text" placeholder="Search artists…" oninput="filterArtists(this.value)">
@@ -444,6 +438,12 @@
 const { createClient } = supabase;
 const sb = createClient('https://dqxecdrzdzkitdkecsca.supabase.co', 'sb_publishable_7AjtdPGsMa3wHcB7DWC_-A_bhNNOuEh');
 let listenedSet = new Set();
+
+// Local preview: skip auth when opened from disk or a localhost server.
+// Never triggers on the deployed (GitHub Pages) host, so it can't bypass auth in production.
+const LOCAL_PREVIEW =
+  location.protocol === 'file:' ||
+  ['localhost', '127.0.0.1', '[::1]', ''].includes(location.hostname);
 
 function setSyncState(state) {
   const dot   = document.getElementById('sync-dot');
@@ -494,6 +494,7 @@ async function toggleListened(btn) {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 async function initAuth() {
+  if (LOCAL_PREVIEW) { showApp(); return; }
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     showApp();
@@ -510,9 +511,8 @@ function showLoginScreen() {
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-form').style.display = 'block';
-  document.getElementById('login-sent').style.display = 'none';
   const btn = document.getElementById('login-btn');
-  btn.textContent = 'Send magic link';
+  btn.textContent = 'Sign in';
   btn.disabled = false;
   document.getElementById('login-msg').textContent = '';
 }
@@ -520,31 +520,33 @@ function showLoginScreen() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
+  if (LOCAL_PREVIEW) {
+    document.getElementById('sync-dot').className = 'sync-dot';
+    document.getElementById('sync-label').textContent = 'Local preview';
+    applyState(); render();
+    return;
+  }
   loadListened().then(() => { applyState(); render(); });
 }
 
 async function handleLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  if (!email) return;
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) {
+    document.getElementById('login-msg').textContent = 'Enter your email and password.';
+    return;
+  }
   const btn = document.getElementById('login-btn');
-  btn.textContent = 'Sending…';
+  btn.textContent = 'Signing in…';
   btn.disabled = true;
   document.getElementById('login-msg').textContent = '';
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: window.location.href.split('#')[0] }
-  });
+  const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) {
-    const isUnauthorized = error.message?.toLowerCase().includes('signup') || error.status === 422 || error.status === 400;
-    document.getElementById('login-msg').textContent = isUnauthorized
-      ? 'This app is private — that email isn\'t authorised to sign in.'
-      : error.message;
-    btn.textContent = 'Send magic link';
+    document.getElementById('login-msg').textContent = 'Incorrect email or password.';
+    btn.textContent = 'Sign in';
     btn.disabled = false;
-  } else {
-    document.getElementById('login-form').style.display = 'none';
-    document.getElementById('login-sent').style.display = 'block';
   }
+  // On success, onAuthStateChange fires SIGNED_IN → showApp()
 }
 
 async function handleSignOut() {
