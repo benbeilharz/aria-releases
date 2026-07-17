@@ -633,7 +633,7 @@ function downloadMonthSingles(mon) {
   const file = new File([json], filename, { type: 'application/json' });
   // iOS / mobile: use the share sheet so the file can be saved to a folder in iCloud Drive.
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    navigator.share({ files: [file], title: filename }).catch(() => {});
+    navigator.share({ files: [file] }).catch(() => {});
     return;
   }
   // Desktop fallback: normal download.
