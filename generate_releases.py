@@ -38,10 +38,12 @@ REPO_DIR      = Path(__file__).parent
 PDF_DIR       = Path.home() / "IHGT" / "Research" / "ARIA"
 TEMPLATE_PATH = REPO_DIR / "template.html"
 
-SUPABASE_URL = "https://dqxecdrzdzkitdkecsca.supabase.co"
-SUPABASE_KEY = "sb_publishable_7AjtdPGsMa3wHcB7DWC_-A_bhNNOuEh"
+FIREBASE_API_KEY     = "AIzaSyAlrjX7jmwHhsmZk2IN_o9FQbrKIr1WcbY"
+FIREBASE_AUTH_DOMAIN = "aria-releases.firebaseapp.com"
+FIREBASE_PROJECT_ID  = "aria-releases"
+ALLOWED_EMAIL        = "ben.beilharz@gmail.com"
 
-EXCLUDED_ARTISTS = frozenset({'The Wiggles', 'Dorothy The Dinosaur', 'Los Wiggles'})
+EXCLUDED_ARTISTS = frozenset({'The Wiggles', 'Dorothy The Dinosaur', 'Los Wiggles', 'Play School'})
 
 # PDF column x-coordinate boundaries (points from left margin)
 TITLE_COL_MAX  = 300
@@ -135,12 +137,14 @@ def deduplicate(releases: list[dict]) -> list[dict]:
     return result
 
 
-def build_html(releases: list[dict], supabase_url: str, supabase_key: str) -> str:
+def build_html(releases: list[dict], firebase_api_key: str, firebase_auth_domain: str, firebase_project_id: str, allowed_email: str) -> str:
     template = TEMPLATE_PATH.read_text(encoding='utf-8')
     return (template
         .replace('__RELEASES_JSON__', json.dumps(releases, ensure_ascii=False))
-        .replace('__SUPABASE_URL__', supabase_url)
-        .replace('__SUPABASE_KEY__', supabase_key))
+        .replace('__FIREBASE_API_KEY__', firebase_api_key)
+        .replace('__FIREBASE_AUTH_DOMAIN__', firebase_auth_domain)
+        .replace('__FIREBASE_PROJECT_ID__', firebase_project_id)
+        .replace('__ALLOWED_EMAIL__', allowed_email))
 
 
 def main():
@@ -165,7 +169,7 @@ def main():
     print(f"\n📊 Total: {len(deduped)} unique releases ({len(all_releases) - len(deduped)} duplicates removed)")
 
     print("🎨 Generating HTML...")
-    html = build_html(deduped, SUPABASE_URL, SUPABASE_KEY)
+    html = build_html(deduped, FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN, FIREBASE_PROJECT_ID, ALLOWED_EMAIL)
 
     output_path = REPO_DIR / "index.html"
     output_path.write_text(html, encoding='utf-8')

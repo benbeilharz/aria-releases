@@ -37,6 +37,35 @@ Edit the variables at the top of `generate_releases.py`:
 | Variable | Default | Description |
 |---|---|---|
 | `PDF_DIR` | `~/IHGT/Research/ARIA` | Folder containing ARIA PDFs |
-| `SUPABASE_URL` | — | Supabase project URL for listened tracking |
-| `SUPABASE_KEY` | — | Supabase publishable key |
+| `FIREBASE_API_KEY` | — | Firebase web app API key |
+| `FIREBASE_AUTH_DOMAIN` | — | Firebase auth domain (`<project-id>.firebaseapp.com`) |
+| `FIREBASE_PROJECT_ID` | — | Firebase project ID |
+| `ALLOWED_EMAIL` | `ben.beilharz@gmail.com` | Only this Google account can sign in |
 | `EXCLUDED_ARTISTS` | The Wiggles, etc. | Artists to filter from output |
+
+## Listened tracking (Firebase)
+
+"Listened" state is synced across devices via Firebase Auth (Google sign-in) + Firestore, keyed per user so it isn't tied to one browser.
+
+Setup, in the [Firebase console](https://console.firebase.google.com):
+
+1. Create a project (free Spark plan).
+2. **Authentication → Sign-in method** → enable **Google**.
+3. **Firestore Database** → create a database, then set the rules to:
+
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /users/{userId}/listened/{key} {
+         allow read, write: if request.auth != null
+           && request.auth.uid == userId
+           && request.auth.token.email == 'ben.beilharz@gmail.com';
+       }
+     }
+   }
+   ```
+
+4. **Project settings → General → Your apps** → add a web app, copy `apiKey`, `authDomain`, `projectId` into `generate_releases.py`, then regenerate.
+
+The site is on public GitHub Pages, so `ALLOWED_EMAIL` and the matching Firestore rule keep anyone but that account from reading or writing listened data — sign-in with any other Google account is rejected client-side and blocked server-side by the rule above.
