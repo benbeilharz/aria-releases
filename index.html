@@ -685,7 +685,7 @@ function buildMonthView(releases) {
         html += `<div class="week-group"><div class="week-header">${fmt} · ${plural(byMonth[mon][date].length,'release')}</div><div class="release-grid">`;
         byMonth[mon][date].forEach(r => {
           const lKey = listenedKey(r), lDone = isListened(r);
-          html += `<div class="release-card ${r.type.toLowerCase()}${lDone?' listened':''}" onclick="goToArtist(${JSON.stringify(r.artist)})">
+          html += `<div class="release-card ${r.type.toLowerCase()}${lDone?' listened':''}" data-artist="${esc(r.artist)}" onclick="goToArtist(this.dataset.artist)">
             <div class="release-title" title="${esc(r.title)}">${esc(r.title)}</div>
             <div class="release-artist">${esc(r.artist)}</div>
             <div class="release-footer">
@@ -713,7 +713,7 @@ function buildMonthView(releases) {
         html += `<tr class="table-date-row"><td colspan="6">${fmt} · ${plural(byMonth[mon][date].length,'release')}</td></tr>`;
         byMonth[mon][date].forEach(r => {
           const lKey = listenedKey(r), lDone = isListened(r);
-          html += `<tr class="${lDone?'listened':''}" onclick="goToArtist(${JSON.stringify(r.artist)})">
+          html += `<tr class="${lDone?'listened':''}" data-artist="${esc(r.artist)}" onclick="goToArtist(this.dataset.artist)">
             <td class="col-play"><a class="am-btn" href="${amUrl(r.artist,r.title)}" target="_blank" onclick="event.stopPropagation()" title="Apple Music"></a></td>
             <td class="col-title col-title-cell" title="${esc(r.title)}">${esc(r.title)}</td>
             <td class="col-artist">${esc(r.artist)}</td>
@@ -744,7 +744,7 @@ function buildArtistView() {
     `<div class="alpha-btn ${letters.includes(ch)?'has-artists':''}" onclick="scrollToLetter('${ch}')">${ch}</div>`
   ).join('');
   const listHtml = sorted.map(a =>
-    `<div class="artist-item ${a===selectedArtist?'active':''}" data-artist="${esc(a)}" data-first="${a[0].toUpperCase()}" onclick="selectArtist(${JSON.stringify(a)})">
+    `<div class="artist-item ${a===selectedArtist?'active':''}" data-artist="${esc(a)}" data-first="${a[0].toUpperCase()}" onclick="selectArtist(this.dataset.artist)">
       <span class="artist-name">${esc(a)}</span><span class="artist-count">${filteredMap[a].length}</span>
     </div>`
   ).join('');
