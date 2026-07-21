@@ -735,7 +735,9 @@ function buildArtistView() {
   ALL_RELEASES.forEach(r => { if (!artistMap[r.artist]) artistMap[r.artist]=[]; artistMap[r.artist].push(r); });
   const filteredMap = {};
   Object.keys(artistMap).forEach(a => {
-    const f = artistMap[a].filter(r => currentFilter==='all' || r.type===currentFilter);
+    const f = artistMap[a].filter(r => (currentFilter==='all' || r.type===currentFilter) &&
+      !(currentListenedFilter==='unheard'  &&  isListened(r)) &&
+      !(currentListenedFilter==='listened' && !isListened(r)));
     if (f.length) filteredMap[a] = f;
   });
   const sorted  = Object.keys(filteredMap).sort((a,b) => a.localeCompare(b));
@@ -805,7 +807,9 @@ function selectArtist(artist) {
   document.querySelectorAll('.artist-item').forEach(el => el.classList.toggle('active', el.dataset.artist===artist));
   const artistMap = {};
   ALL_RELEASES.forEach(r => { if (!artistMap[r.artist]) artistMap[r.artist]=[]; artistMap[r.artist].push(r); });
-  const f = (artistMap[artist]||[]).filter(r => currentFilter==='all' || r.type===currentFilter);
+  const f = (artistMap[artist]||[]).filter(r => (currentFilter==='all' || r.type===currentFilter) &&
+    !(currentListenedFilter==='unheard'  &&  isListened(r)) &&
+    !(currentListenedFilter==='listened' && !isListened(r)));
   document.getElementById('artist-detail').innerHTML = buildDetail(artist, f);
 }
 
