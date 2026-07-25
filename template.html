@@ -31,6 +31,11 @@
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
   /* ── Login Screen ─────────────────────────────────────────────────────────── */
+  /* Which screen is visible is decided by data-auth on <html>, set before first
+     paint by the inline script in <head>. Signing in leaves a hint in
+     localStorage, so a reload goes straight to the app instead of flashing a
+     login card that reads as a loading screen. Auth still decides the real state
+     a moment later, and corrects this if the session has actually gone. */
   #login-screen {
     min-height: 100vh;
     display: flex;
@@ -39,6 +44,9 @@
     background: var(--aria-red);
     padding: 24px;
   }
+  #app { display: none; }
+  html[data-auth="in"] #login-screen { display: none; }
+  html[data-auth="in"] #app          { display: block; }
   .login-card {
     background: white;
     border-radius: 20px;
@@ -367,6 +375,16 @@
     .release-grid { grid-template-columns: 1fr 1fr; }
   }
 </style>
+<script>
+  // Runs before the body is parsed so the correct screen is up on the first paint.
+  // Only a hint — the app renders from release data already embedded in this page,
+  // and Firebase confirms or corrects it once it reports an auth state.
+  try {
+    if (localStorage.getItem('aria_signed_in') === '1') {
+      document.documentElement.setAttribute('data-auth', 'in');
+    }
+  } catch (e) {}
+</script>
 </head>
 <body>
 
@@ -375,11 +393,11 @@
   <div class="login-card">
     <img class="login-logo" src="aria_text.jpg" alt="ARIA">
     <h2>ARIA New Releases</h2>
-    <!-- Shown until Firebase reports an auth state; never leaves the page blank. -->
-    <p class="login-sub" id="login-boot">Loading…</p>
-    <div id="login-form" style="display:none">
+    <div id="login-form">
       <p class="login-sub">Sign in to track what you've listened to.</p>
-      <button class="login-submit-btn login-google-btn" id="login-btn" onclick="handleLogin()">
+      <!-- Starts disabled: clicking before Firebase has initialised would queue the
+           popup behind it and lose the user gesture, so Safari would block it. -->
+      <button class="login-submit-btn login-google-btn" id="login-btn" onclick="handleLogin()" disabled>
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.98v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.95 10.7A5.4 5.4 0 0 1 3.67 9c0-.59.1-1.17.28-1.7V4.97H.98A9 9 0 0 0 0 9c0 1.45.35 2.83.98 4.03l2.97-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .98 4.97l2.97 2.33C4.66 5.17 6.65 3.58 9 3.58z"/></svg>
         <span>Sign in with Google</span>
       </button>
@@ -392,7 +410,7 @@
 </div>
 
 <!-- ── App ───────────────────────────────────────────────────────────────────── -->
-<div id="app" style="display:none">
+<div id="app">
 
 <header>
   <div class="header-left">
@@ -460,6 +478,45 @@ firebase.initializeApp({
 let auth, db;
 let listenedSet = new Set();
 
+// Set once Firebase confirms a user, read by the inline script in <head> on the next
+// load. Cleared on sign-out, so a signed-out reload goes straight to the login card.
+const SIGNED_IN_HINT = 'aria_signed_in';
+// Listened keys from the last successful Firestore read. Without this the optimistic
+// first paint would show everything as unheard and visibly re-shuffle a moment later,
+// which is worst under the Unheard filter — every release would appear, then vanish.
+const LISTENED_CACHE = 'aria_listened';
+
+function setAuthView(state) {
+  document.documentElement.setAttribute('data-auth', state);
+}
+
+function rememberSignedIn(yes) {
+  try {
+    if (yes) localStorage.setItem(SIGNED_IN_HINT, '1');
+    else     localStorage.removeItem(SIGNED_IN_HINT);
+  } catch (e) {}
+}
+
+function assumeSignedIn() {
+  try { return localStorage.getItem(SIGNED_IN_HINT) === '1'; } catch (e) { return false; }
+}
+
+function loadListenedCache() {
+  try {
+    const raw = localStorage.getItem(LISTENED_CACHE);
+    if (raw) listenedSet = new Set(JSON.parse(raw));
+  } catch (e) {}
+}
+
+function saveListenedCache() {
+  try { localStorage.setItem(LISTENED_CACHE, JSON.stringify([...listenedSet])); } catch (e) {}
+}
+
+// Belongs to whoever was signed in, so it must not outlive their session.
+function clearListenedCache() {
+  try { localStorage.removeItem(LISTENED_CACHE); } catch (e) {}
+}
+
 // Local preview: skip auth when opened from disk or a localhost server.
 // Never triggers on the deployed (GitHub Pages) host, so it can't bypass auth in production.
 const LOCAL_PREVIEW =
@@ -482,6 +539,7 @@ async function loadListened() {
   try {
     const snap = await listenedCol().get();
     listenedSet = new Set(snap.docs.map(d => d.id));
+    saveListenedCache();
     setSyncState('ok');
   } catch (e) {
     setSyncState('error');
@@ -522,6 +580,7 @@ async function toggleListened(btn) {
     if (wasListened) { listenedSet.add(key);    btn.classList.add('done');    btn.closest('.release-card, tr')?.classList.add('listened'); }
     else             { listenedSet.delete(key); btn.classList.remove('done'); btn.closest('.release-card, tr')?.classList.remove('listened'); }
   }
+  saveListenedCache(); // after the revert, so the cache never keeps a failed write
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -661,6 +720,9 @@ async function initAuth() {
       document.getElementById('login-msg').textContent = "That Google account isn't authorized.";
       return;
     }
+    // Recorded on every confirmed session, not just at sign-in, so an existing
+    // session picks the hint up on its next load rather than waiting for a re-login.
+    rememberSignedIn(!!user);
     if (user && !signedIn) { signedIn = true; showApp(); }
     else if (!user) { signedIn = false; showLoginScreen(); }
   }, () => {
@@ -680,23 +742,33 @@ function resetAuthStorage() {
 }
 
 function showLoginScreen() {
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-boot').style.display = 'none';
-  document.getElementById('login-form').style.display = 'block';
+  setAuthView('out');
+  // The optimistic hint was wrong, or the session has ended — don't assume again.
+  rememberSignedIn(false);
+  clearListenedCache();
   document.getElementById('login-btn').disabled = false;
   document.getElementById('login-msg').textContent = '';
 }
 
+// Renders from the release data already embedded in this page. Safe to call before
+// Firebase reports in, and cheap to call twice — paintApp() only does the work once.
+let painted = false;
+function paintApp() {
+  if (painted) return;
+  painted = true;
+  applyState();
+  render();
+}
+
 function showApp() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
+  setAuthView('in');
   if (LOCAL_PREVIEW) {
     document.getElementById('sync-dot').className = 'sync-dot';
     document.getElementById('sync-label').textContent = 'Local preview';
-    applyState(); render();
+    paintApp();
     return;
   }
+  paintApp();
   loadListened().then(() => { applyState(); render(); });
 }
 
@@ -1033,6 +1105,13 @@ function applyState() {
 }
 
 // Init
+// Paint immediately when the last session was signed in, rather than waiting on
+// Firebase — releases come from this page and listened marks from the local cache,
+// so a reload lands on real content. initAuth() then confirms or corrects it.
+if (assumeSignedIn() && !LOCAL_PREVIEW) {
+  loadListenedCache();
+  paintApp();
+}
 initAuth();
 </script>
 </body>
