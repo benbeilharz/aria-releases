@@ -68,6 +68,13 @@
   }
   .login-google-btn:hover { opacity: 1; background: #f8f8f8; }
   .login-error { color: #EF4444; font-size: 13px; margin-top: 12px; min-height: 20px; }
+  .login-reset-btn {
+    margin-top: 14px; padding: 8px 14px;
+    background: none; border: none;
+    color: var(--text2); font-size: 13px; font-weight: 600;
+    text-decoration: underline; cursor: pointer;
+  }
+  .login-reset-btn:hover { color: var(--text); }
   .login-sent { padding: 12px 0; }
   .login-sent-icon { font-size: 40px; margin-bottom: 12px; }
   .login-sent p { color: var(--text2); font-size: 14px; line-height: 1.6; }
@@ -364,11 +371,13 @@
 <body>
 
 <!-- ── Login Screen ──────────────────────────────────────────────────────────── -->
-<div id="login-screen" style="display:none">
+<div id="login-screen">
   <div class="login-card">
     <img class="login-logo" src="aria_text.jpg" alt="ARIA">
     <h2>ARIA New Releases</h2>
-    <div id="login-form">
+    <!-- Shown until Firebase reports an auth state; never leaves the page blank. -->
+    <p class="login-sub" id="login-boot">Loading…</p>
+    <div id="login-form" style="display:none">
       <p class="login-sub">Sign in to track what you've listened to.</p>
       <button class="login-submit-btn login-google-btn" id="login-btn" onclick="handleLogin()">
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.98v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.95 10.7A5.4 5.4 0 0 1 3.67 9c0-.59.1-1.17.28-1.7V4.97H.98A9 9 0 0 0 0 9c0 1.45.35 2.83.98 4.03l2.97-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .98 4.97l2.97 2.33C4.66 5.17 6.65 3.58 9 3.58z"/></svg>
@@ -376,6 +385,9 @@
       </button>
       <p class="login-error" id="login-msg"></p>
     </div>
+    <button class="login-reset-btn" id="login-reset-btn" style="display:none" onclick="resetAuthStorage()">
+      Reset sign-in data &amp; reload
+    </button>
   </div>
 </div>
 
@@ -514,24 +526,63 @@ async function toggleListened(btn) {
 // Only these Google accounts may sign in; anyone else is signed out immediately.
 const ALLOWED_EMAILS = ['__ALLOWED_EMAIL__'];
 
+// Firebase resolves the persisted session via IndexedDB before it reports an auth
+// state. Desktop Safari can leave that request hanging forever — no callback, no
+// error — so the watchdog surfaces a recoverable login screen instead of a blank page.
+const AUTH_TIMEOUT_MS = 6000;
+
 function initAuth() {
   if (LOCAL_PREVIEW) { showApp(); return; }
   let signedIn = false;
+  let resolved = false;
+
+  const watchdog = setTimeout(() => {
+    if (resolved) return;
+    showLoginScreen();
+    document.getElementById('login-msg').textContent =
+      "Couldn't reach the sign-in service. Try reloading, or reset the stored sign-in data below.";
+    document.getElementById('login-reset-btn').style.display = 'inline-block';
+  }, AUTH_TIMEOUT_MS);
+
   auth.onAuthStateChanged((user) => {
+    resolved = true;
+    clearTimeout(watchdog);
     if (user && !ALLOWED_EMAILS.includes(user.email)) {
       auth.signOut();
+      showLoginScreen();
       document.getElementById('login-msg').textContent = "That Google account isn't authorized.";
       return;
     }
     if (user && !signedIn) { signedIn = true; showApp(); }
-    else if (!user && signedIn) { signedIn = false; showLoginScreen(); }
-    else if (!user) { document.getElementById('login-screen').style.display = 'flex'; }
+    else if (!user) { signedIn = false; showLoginScreen(); }
+  }, () => {
+    resolved = true;
+    clearTimeout(watchdog);
+    showLoginScreen();
+    document.getElementById('login-msg').textContent = 'Sign-in service unavailable. Please reload.';
   });
+}
+
+// Clears the Firebase auth store, which is what wedges in Safari. Listened-to data
+// lives in Firestore, so nothing is lost — it just requires signing in again.
+function resetAuthStorage() {
+  const btn = document.getElementById('login-reset-btn');
+  btn.disabled = true;
+  btn.textContent = 'Resetting…';
+  const reload = () => location.reload();
+  setTimeout(reload, 3000); // deleteDatabase can hang too; reload regardless
+  try {
+    const req = indexedDB.deleteDatabase('firebaseLocalStorageDb');
+    req.onsuccess = req.onerror = req.onblocked = reload;
+  } catch (e) {
+    reload();
+  }
 }
 
 function showLoginScreen() {
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
+  document.getElementById('login-boot').style.display = 'none';
   document.getElementById('login-form').style.display = 'block';
   document.getElementById('login-btn').disabled = false;
   document.getElementById('login-msg').textContent = '';
