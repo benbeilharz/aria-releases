@@ -538,31 +538,51 @@ const ALLOWED_EMAILS = ['__ALLOWED_EMAIL__'];
 // and its IndexedDB check begins `if (!indexedDB) return false` inside a try/catch.
 // So hiding the global from Firebase makes that check fail fast instead of hanging,
 // and it falls through to the next store — localStorage — which persists sessions
-// across restarts just as well. Deleting the database only helps when one store is
-// corrupt, not when the whole subsystem is unresponsive, so that is now a fallback.
+// across restarts just as well.
+//
+// A wedge is usually specific to one database rather than the whole subsystem, so the
+// probe has to open the database Firebase will open. Opening it blindly is unsafe —
+// if it does not exist yet, that creates it empty at version 1 without the object
+// store Firebase expects, breaking the SDK on browsers where nothing was wrong — so
+// existence is checked first and a throwaway name is used when there is nothing there.
 const AUTH_TIMEOUT_MS  = 6000;  // healthy browsers report an auth state in well under a second
 const AUTH_TIMEOUT_IDB = 2500;  // IndexedDB already looks sick — don't wait as long
 const IDB_PROBE_MS     = 2500;
-const RECOVERED_FLAG   = 'aria_auth_recovered';
+const AUTH_DB_NAME     = 'firebaseLocalStorageDb';
 
 // Captured before disableIndexedDb() can replace the global.
 const nativeIdb = window.indexedDB;
 
-// True if IndexedDB answers at all. Deliberately opens its own throwaway database:
-// opening firebaseLocalStorageDb here would create it empty at version 1 without the
-// object store Firebase expects, breaking the SDK on browsers where nothing was wrong.
-function idbResponds(timeoutMs) {
+// Settles with `fallback` if the request has not called back within timeoutMs.
+function idbRequest(makeRequest, timeoutMs, fallback) {
   return new Promise((resolve) => {
     let done = false;
-    const finish = (ok) => { if (!done) { done = true; resolve(ok); } };
-    setTimeout(() => finish(false), timeoutMs);
-    try {
-      const req = nativeIdb.open('aria_idb_probe');
-      req.onsuccess = () => { try { req.result.close(); } catch (e) {} finish(true); };
-      req.onerror   = () => finish(false);
-      req.onblocked = () => finish(false);
-    } catch (e) { finish(false); }
+    const finish = (v) => { if (!done) { done = true; resolve(v); } };
+    setTimeout(() => finish(fallback), timeoutMs);
+    try { makeRequest(finish); } catch (e) { finish(fallback); }
   });
+}
+
+// True if the store Firebase is about to read responds at all.
+async function authStoreResponds(timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  const left = () => Math.max(250, deadline - Date.now());
+
+  // databases() is unavailable in some browsers and can hang in a sick subsystem;
+  // either way, treating the name as absent falls back to the throwaway probe.
+  const names = await idbRequest((finish) => {
+    nativeIdb.databases().then((dbs) => finish(dbs.map(d => d.name)), () => finish([]));
+  }, left(), []);
+
+  const name = names.includes(AUTH_DB_NAME) ? AUTH_DB_NAME : 'aria_idb_probe';
+  return idbRequest((finish) => {
+    const req = nativeIdb.open(name);
+    // Same version, so no upgrade is triggered and the connection is closed
+    // immediately — this cannot block Firebase's own open.
+    req.onsuccess = () => { try { req.result.close(); } catch (e) {} finish(true); };
+    req.onerror   = () => finish(false);
+    req.onblocked = () => finish(false);
+  }, left(), false);
 }
 
 // Hides IndexedDB from Firebase so it selects localStorage persistence instead of
@@ -581,19 +601,15 @@ function disableIndexedDb() {
   } catch (e) { return false; }
 }
 
-// Deletes the wedged auth store. Listened-to data lives in Firestore, so nothing is
-// lost — it just requires signing in again. deleteDatabase can hang exactly like the
-// open it is meant to repair, so this always settles on the timeout.
+// Deletes the auth store. Listened-to data lives in Firestore, so nothing is lost —
+// it just requires signing in again. A wedged database usually blocks the delete
+// rather than completing it, so this settles on the timeout either way; when that
+// happens only Safari's own "Manage Website Data" can clear the origin.
 function deleteAuthDb(timeoutMs) {
-  return new Promise((resolve) => {
-    let done = false;
-    const finish = () => { if (!done) { done = true; resolve(); } };
-    setTimeout(finish, timeoutMs);
-    try {
-      const req = nativeIdb.deleteDatabase('firebaseLocalStorageDb');
-      req.onsuccess = req.onerror = req.onblocked = finish;
-    } catch (e) { finish(); }
-  });
+  return idbRequest((finish) => {
+    const req = nativeIdb.deleteDatabase(AUTH_DB_NAME);
+    req.onsuccess = req.onerror = req.onblocked = () => finish();
+  }, timeoutMs);
 }
 
 // The session lives in localStorage whenever the IndexedDB fallback is in effect,
@@ -606,16 +622,12 @@ function clearStoredSession() {
   } catch (e) {}
 }
 
-function sessionFlag(key) {
-  try { return sessionStorage.getItem(key) === '1'; } catch (e) { return false; }
-}
-
 async function initAuth() {
   if (LOCAL_PREVIEW) { showApp(); return; }
 
   // A slow-but-healthy browser that trips the probe only ends up on localStorage
   // persistence, which costs it nothing — so this can act on the result directly.
-  const idbOk = await idbResponds(IDB_PROBE_MS);
+  const idbOk = await authStoreResponds(IDB_PROBE_MS);
   if (!idbOk) disableIndexedDb();
 
   auth = firebase.auth();
@@ -624,36 +636,25 @@ async function initAuth() {
   let signedIn = false;
   let resolved = false;
 
-  const watchdog = setTimeout(recoverOrReport, idbOk ? AUTH_TIMEOUT_MS : AUTH_TIMEOUT_IDB);
+  const watchdog = setTimeout(reportStuck, idbOk ? AUTH_TIMEOUT_MS : AUTH_TIMEOUT_IDB);
 
-  // Auth never reported in. If IndexedDB itself answered, a single corrupt or blocked
-  // database is the likely cause, so clear it and reload — once per tab, since a
-  // second hang means the problem is elsewhere and reloading would just loop.
-  function recoverOrReport() {
+  // Auth never reported in, despite the store above answering and the localStorage
+  // fallback being in place if it didn't. Deleting and reloading is not attempted
+  // here: a wedged database blocks the delete, so it only costs a reload and the
+  // session. Name the one thing that does reliably clear a wedged origin instead.
+  function reportStuck() {
     if (resolved) return;
-
-    if (idbOk && !sessionFlag(RECOVERED_FLAG)) {
-      // If sessionStorage is unavailable the flag can't be recorded, and reloading
-      // would loop forever — fall through to the manual screen instead.
-      try { sessionStorage.setItem(RECOVERED_FLAG, '1'); } catch (e) {}
-      if (sessionFlag(RECOVERED_FLAG)) {
-        document.getElementById('login-boot').textContent = 'Sign-in is stuck — retrying…';
-        deleteAuthDb(2000).then(() => location.reload());
-        return;
-      }
-    }
-
     showLoginScreen();
-    document.getElementById('login-msg').textContent =
-      "Sign-in storage isn't responding in this browser. Reset it below, or open this page in another browser.";
+    document.getElementById('login-msg').innerHTML =
+      "Sign-in is stuck on this browser's stored data. Reset it below — if that doesn't help, " +
+      'clear this site in Safari &rsaquo; Settings &rsaquo; Privacy &rsaquo; Manage Website Data, ' +
+      'then quit and reopen Safari.';
     document.getElementById('login-reset-btn').style.display = 'inline-block';
   }
 
   auth.onAuthStateChanged((user) => {
     resolved = true;
     clearTimeout(watchdog);
-    // Auth works again; let a later hang in this tab auto-recover too.
-    try { sessionStorage.removeItem(RECOVERED_FLAG); } catch (e) {}
     if (user && !ALLOWED_EMAILS.includes(user.email)) {
       auth.signOut();
       showLoginScreen();
@@ -674,7 +675,6 @@ function resetAuthStorage() {
   const btn = document.getElementById('login-reset-btn');
   btn.disabled = true;
   btn.textContent = 'Resetting…';
-  try { sessionStorage.removeItem(RECOVERED_FLAG); } catch (e) {}
   clearStoredSession();
   deleteAuthDb(3000).then(() => location.reload());
 }
