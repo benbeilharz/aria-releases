@@ -454,8 +454,10 @@ firebase.initializeApp({
   authDomain: '__FIREBASE_AUTH_DOMAIN__',
   projectId: '__FIREBASE_PROJECT_ID__',
 });
-const auth = firebase.auth();
-const db   = firebase.firestore();
+// Both are created in initAuth(), not here: constructing the auth instance is what
+// starts the IndexedDB session read that can hang in Safari, and we want a watchdog
+// armed before that happens.
+let auth, db;
 let listenedSet = new Set();
 
 // Local preview: skip auth when opened from disk or a localhost server.
@@ -526,27 +528,100 @@ async function toggleListened(btn) {
 // Only these Google accounts may sign in; anyone else is signed out immediately.
 const ALLOWED_EMAILS = ['__ALLOWED_EMAIL__'];
 
-// Firebase resolves the persisted session via IndexedDB before it reports an auth
-// state. Desktop Safari can leave that request hanging forever — no callback, no
-// error — so the watchdog surfaces a recoverable login screen instead of a blank page.
-const AUTH_TIMEOUT_MS = 6000;
+// Firebase keeps the persisted session in an IndexedDB database named
+// firebaseLocalStorageDb and reads it before reporting any auth state. Desktop
+// Safari can leave that open request hanging forever — no success callback, no
+// error — which wedges the entire auth instance: signInWithPopup and
+// setPersistence queue behind the same initialisation and never resolve either.
+// Nothing inside the SDK can recover from it, so the only fix is to delete the
+// database and reload, which the watchdog below does automatically.
+const AUTH_TIMEOUT_MS  = 6000;  // healthy browsers report an auth state in well under a second
+const AUTH_TIMEOUT_IDB = 2500;  // IndexedDB already looks sick — don't wait as long
+const IDB_PROBE_MS     = 2500;
+const RECOVERED_FLAG   = 'aria_auth_recovered';
 
-function initAuth() {
+// True if IndexedDB answers at all. Deliberately opens its own throwaway database:
+// opening firebaseLocalStorageDb here would create it empty at version 1 without the
+// object store Firebase expects, breaking the SDK on browsers where nothing was wrong.
+function idbResponds(timeoutMs) {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (ok) => { if (!done) { done = true; resolve(ok); } };
+    setTimeout(() => finish(false), timeoutMs);
+    try {
+      const req = indexedDB.open('aria_idb_probe');
+      req.onsuccess = () => { try { req.result.close(); } catch (e) {} finish(true); };
+      req.onerror   = () => finish(false);
+      req.onblocked = () => finish(false);
+    } catch (e) { finish(false); }
+  });
+}
+
+// Deletes the wedged auth store. Listened-to data lives in Firestore, so nothing is
+// lost — it just requires signing in again. deleteDatabase can hang exactly like the
+// open it is meant to repair, so this always settles on the timeout.
+function deleteAuthDb(timeoutMs) {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => { if (!done) { done = true; resolve(); } };
+    setTimeout(finish, timeoutMs);
+    try {
+      const req = indexedDB.deleteDatabase('firebaseLocalStorageDb');
+      req.onsuccess = req.onerror = req.onblocked = finish;
+    } catch (e) { finish(); }
+  });
+}
+
+function sessionFlag(key) {
+  try { return sessionStorage.getItem(key) === '1'; } catch (e) { return false; }
+}
+
+async function initAuth() {
   if (LOCAL_PREVIEW) { showApp(); return; }
+
+  // The probe never triggers repair on its own — a slow-but-healthy browser would
+  // then lose its session for nothing. It only decides how long to wait for Firebase
+  // before treating silence as a hang.
+  const idbOk = await idbResponds(IDB_PROBE_MS);
+
+  auth = firebase.auth();
+  db   = firebase.firestore();
+
   let signedIn = false;
   let resolved = false;
 
-  const watchdog = setTimeout(() => {
+  const watchdog = setTimeout(recoverOrReport, idbOk ? AUTH_TIMEOUT_MS : AUTH_TIMEOUT_IDB);
+
+  // Auth never reported in. Clear the wedged database and reload once per tab, which
+  // is enough to fix a single corrupt or blocked store; if it happens again the whole
+  // IndexedDB subsystem is unresponsive and only the user can decide what to do.
+  function recoverOrReport() {
     if (resolved) return;
+
+    if (!sessionFlag(RECOVERED_FLAG)) {
+      let flagged = false;
+      // If sessionStorage is unavailable the flag can't be recorded, and reloading
+      // would loop forever — fall through to the manual screen instead.
+      try { sessionStorage.setItem(RECOVERED_FLAG, '1'); } catch (e) {}
+      flagged = sessionFlag(RECOVERED_FLAG);
+      if (flagged) {
+        document.getElementById('login-boot').textContent = 'Sign-in is stuck — retrying…';
+        deleteAuthDb(2000).then(() => location.reload());
+        return;
+      }
+    }
+
     showLoginScreen();
     document.getElementById('login-msg').textContent =
-      "Couldn't reach the sign-in service. Try reloading, or reset the stored sign-in data below.";
+      "Safari's local sign-in storage isn't responding. Reset it below, or open this page in another browser.";
     document.getElementById('login-reset-btn').style.display = 'inline-block';
-  }, AUTH_TIMEOUT_MS);
+  }
 
   auth.onAuthStateChanged((user) => {
     resolved = true;
     clearTimeout(watchdog);
+    // Auth works again; let a later hang in this tab auto-recover too.
+    try { sessionStorage.removeItem(RECOVERED_FLAG); } catch (e) {}
     if (user && !ALLOWED_EMAILS.includes(user.email)) {
       auth.signOut();
       showLoginScreen();
@@ -563,20 +638,12 @@ function initAuth() {
   });
 }
 
-// Clears the Firebase auth store, which is what wedges in Safari. Listened-to data
-// lives in Firestore, so nothing is lost — it just requires signing in again.
 function resetAuthStorage() {
   const btn = document.getElementById('login-reset-btn');
   btn.disabled = true;
   btn.textContent = 'Resetting…';
-  const reload = () => location.reload();
-  setTimeout(reload, 3000); // deleteDatabase can hang too; reload regardless
-  try {
-    const req = indexedDB.deleteDatabase('firebaseLocalStorageDb');
-    req.onsuccess = req.onerror = req.onblocked = reload;
-  } catch (e) {
-    reload();
-  }
+  try { sessionStorage.removeItem(RECOVERED_FLAG); } catch (e) {}
+  deleteAuthDb(3000).then(() => location.reload());
 }
 
 function showLoginScreen() {
